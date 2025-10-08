@@ -195,15 +195,7 @@ export default function Landing() {
       <footer className="relative z-10 border-t border-[#222222] bg-[#111111]/80 backdrop-blur-lg py-8">
         <div className="container mx-auto px-4 text-center text-gray-400">
           <p>
-            Built with ❤️ using{" "}
-            <a
-              href="https://vly.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#00ff88] hover:text-[#00ff88]/80 transition-colors underline"
-            >
-              vly.ai
-            </a>
+            © 2024 Task Manager. All rights reserved.
           </p>
         </div>
       </footer>
