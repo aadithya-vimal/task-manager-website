@@ -12,6 +12,7 @@ import Landing from "./pages/Landing.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import "./types/global.d.ts";
+import "./lib/firebase"; // Initialize Firebase
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
