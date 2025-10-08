@@ -195,7 +195,7 @@ export default function Landing() {
       <footer className="relative z-10 border-t border-[#222222] bg-[#111111]/80 backdrop-blur-lg py-8">
         <div className="container mx-auto px-4 text-center text-gray-400">
           <p>
-            © 2024 Task Manager. All rights reserved.
+            © 2025 Aadithya Vimal
           </p>
         </div>
       </footer>
