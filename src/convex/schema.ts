@@ -32,12 +32,17 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
-
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    // Tasks table
+    tasks: defineTable({
+      userId: v.id("users"),
+      title: v.string(),
+      description: v.string(),
+      deadline: v.optional(v.string()),
+      priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+      status: v.union(v.literal("completed"), v.literal("incomplete")),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_and_status", ["userId", "status"]),
   },
   {
     schemaValidation: false,
