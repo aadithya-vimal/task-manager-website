@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
+import { DevToolbar } from "../dev-toolbar-readonly";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import AuthPage from "@/pages/Auth.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
@@ -43,7 +43,7 @@ function RouteSyncer() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <VlyToolbar />
+    <DevToolbar />
     <InstrumentationProvider>
       <ConvexAuthProvider client={convex}>
         <BrowserRouter>
