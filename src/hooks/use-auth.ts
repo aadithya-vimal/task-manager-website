@@ -1,29 +1,87 @@
-import { api } from "@/convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
-
+import { auth, googleProvider } from "@/lib/firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  User,
+} from "firebase/auth";
 import { useEffect, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export function useAuth() {
-  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.currentUser);
-  const { signIn, signOut } = useAuthActions();
-
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const syncUser = useMutation(api.users.syncUser);
 
-  // This effect updates the loading state once auth is loaded and user data is available
-  // It ensures we only show content when both authentication state and user data are ready
   useEffect(() => {
-    if (!isAuthLoading && user !== undefined) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      
+      // Sync user to Convex database when authenticated
+      if (firebaseUser) {
+        try {
+          await syncUser({
+            firebaseUid: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || undefined,
+            photoURL: firebaseUser.photoURL || undefined,
+          });
+        } catch (error) {
+          console.error("Error syncing user:", error);
+        }
+      }
+      
       setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [syncUser]);
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign up");
     }
-  }, [isAuthLoading, user]);
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign in");
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      return userCredential.user;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign in with Google");
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign out");
+    }
+  };
 
   return {
-    isLoading,
-    isAuthenticated,
     user,
+    isLoading,
+    isAuthenticated: !!user,
+    signUp,
     signIn,
+    signInWithGoogle,
     signOut,
   };
 }

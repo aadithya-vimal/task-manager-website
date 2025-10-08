@@ -1,22 +1,27 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
-// Query to get all tasks for the current user
+// Query to get all tasks for a user by Firebase UID
 export const getUserTasks = query({
   args: {
+    firebaseUid: v.string(),
     filter: v.optional(v.union(v.literal("all"), v.literal("completed"), v.literal("incomplete"))),
     searchQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    // Get user by Firebase UID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+
+    if (!user) {
       return [];
     }
 
     let tasks = await ctx.db
       .query("tasks")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
     // Apply status filter
@@ -44,15 +49,21 @@ export const getUserTasks = query({
 // Mutation to create a new task
 export const createTask = mutation({
   args: {
+    firebaseUid: v.string(),
     title: v.string(),
     description: v.string(),
     deadline: v.optional(v.string()),
     priority: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    // Get user by Firebase UID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     if (!args.title.trim()) {
@@ -64,7 +75,7 @@ export const createTask = mutation({
     }
 
     const taskId = await ctx.db.insert("tasks", {
-      userId,
+      userId: user._id,
       title: args.title.trim(),
       description: args.description.trim(),
       deadline: args.deadline,
@@ -79,6 +90,7 @@ export const createTask = mutation({
 // Mutation to update a task
 export const updateTask = mutation({
   args: {
+    firebaseUid: v.string(),
     id: v.id("tasks"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -87,9 +99,14 @@ export const updateTask = mutation({
     status: v.optional(v.union(v.literal("completed"), v.literal("incomplete"))),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    // Get user by Firebase UID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     const task = await ctx.db.get(args.id);
@@ -97,7 +114,7 @@ export const updateTask = mutation({
       throw new Error("Task not found");
     }
 
-    if (task.userId !== userId) {
+    if (task.userId !== user._id) {
       throw new Error("Not authorized to update this task");
     }
 
@@ -126,12 +143,18 @@ export const updateTask = mutation({
 // Mutation to delete a task
 export const deleteTask = mutation({
   args: {
+    firebaseUid: v.string(),
     id: v.id("tasks"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    // Get user by Firebase UID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     const task = await ctx.db.get(args.id);
@@ -139,7 +162,7 @@ export const deleteTask = mutation({
       throw new Error("Task not found");
     }
 
-    if (task.userId !== userId) {
+    if (task.userId !== user._id) {
       throw new Error("Not authorized to delete this task");
     }
 
@@ -151,12 +174,18 @@ export const deleteTask = mutation({
 // Mutation to toggle task status
 export const toggleTaskStatus = mutation({
   args: {
+    firebaseUid: v.string(),
     id: v.id("tasks"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    // Get user by Firebase UID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     const task = await ctx.db.get(args.id);
@@ -164,7 +193,7 @@ export const toggleTaskStatus = mutation({
       throw new Error("Task not found");
     }
 
-    if (task.userId !== userId) {
+    if (task.userId !== user._id) {
       throw new Error("Not authorized to update this task");
     }
 

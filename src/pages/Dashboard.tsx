@@ -17,7 +17,7 @@ import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { Plus, Search, LogOut, Loader2, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { toast } from "sonner";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { Id } from "@/convex/_generated/dataModel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,11 +35,14 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<"all" | "completed" | "incomplete">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Doc<"tasks"> | null>(null);
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Id<"tasks"> | null>(null);
 
-  const tasks = useQuery(api.tasks.getUserTasks, { filter, searchQuery });
+  const tasks = useQuery(
+    api.tasks.getUserTasks,
+    user ? { firebaseUid: user.uid, filter, searchQuery } : "skip"
+  );
   const createTask = useMutation(api.tasks.createTask);
   const updateTask = useMutation(api.tasks.updateTask);
   const deleteTask = useMutation(api.tasks.deleteTask);
@@ -52,8 +55,10 @@ export default function Dashboard() {
   }, [isLoading, isAuthenticated, navigate]);
 
   const handleCreateTask = async (data: TaskFormData) => {
+    if (!user) return;
     try {
       await createTask({
+        firebaseUid: user.uid,
         title: data.title,
         description: data.description,
         deadline: data.deadline || undefined,
@@ -67,9 +72,10 @@ export default function Dashboard() {
   };
 
   const handleUpdateTask = async (data: TaskFormData) => {
-    if (!editingTask) return;
+    if (!editingTask || !user) return;
     try {
       await updateTask({
+        firebaseUid: user.uid,
         id: editingTask._id,
         title: data.title,
         description: data.description,
@@ -85,17 +91,18 @@ export default function Dashboard() {
   };
 
   const handleToggleTask = async (id: Id<"tasks">) => {
+    if (!user) return;
     try {
-      await toggleTaskStatus({ id });
+      await toggleTaskStatus({ firebaseUid: user.uid, id });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update task");
     }
   };
 
   const handleDeleteTask = async () => {
-    if (!taskToDelete) return;
+    if (!taskToDelete || !user) return;
     try {
-      await deleteTask({ id: taskToDelete });
+      await deleteTask({ firebaseUid: user.uid, id: taskToDelete });
       toast.success("Task deleted successfully!");
       setDeleteDialogOpen(false);
       setTaskToDelete(null);
@@ -136,7 +143,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">Task Manager</h1>
-                <p className="text-sm text-gray-400">Welcome back, {user?.name || user?.email || "User"}</p>
+                <p className="text-sm text-gray-400">Welcome back, {user?.displayName || user?.email || "User"}</p>
               </div>
             </div>
             <Button

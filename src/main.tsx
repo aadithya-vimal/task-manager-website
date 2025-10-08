@@ -2,7 +2,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { DevToolbar } from "../dev-toolbar-readonly";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import AuthPage from "@/pages/Auth.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -12,11 +11,10 @@ import Landing from "./pages/Landing.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import "./types/global.d.ts";
-import "./lib/firebase"; // Initialize Firebase
+import "./lib/firebase";
+import { ConvexProvider } from "convex/react";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
-
 
 function RouteSyncer() {
   const location = useLocation();
@@ -41,12 +39,11 @@ function RouteSyncer() {
   return null;
 }
 
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <DevToolbar />
     <InstrumentationProvider>
-      <ConvexAuthProvider client={convex}>
+      <ConvexProvider client={convex}>
         <BrowserRouter>
           <RouteSyncer />
           <Routes>
@@ -57,7 +54,7 @@ createRoot(document.getElementById("root")!).render(
           </Routes>
         </BrowserRouter>
         <Toaster />
-      </ConvexAuthProvider>
+      </ConvexProvider>
     </InstrumentationProvider>
   </StrictMode>,
 );

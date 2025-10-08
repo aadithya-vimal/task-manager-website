@@ -1,33 +1,68 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { query, QueryCtx } from "./_generated/server";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 /**
- * Get the current signed in user. Returns null if the user is not signed in.
- * Usage: const signedInUser = await ctx.runQuery(api.authHelpers.currentUser);
- * THIS FUNCTION IS READ-ONLY. DO NOT MODIFY.
+ * Sync or create user from Firebase Auth
  */
-export const currentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getCurrentUser(ctx);
+export const syncUser = mutation({
+  args: {
+    firebaseUid: v.string(),
+    email: v.string(),
+    name: v.optional(v.string()),
+    photoURL: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Check if user already exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
 
-    if (user === null) {
-      return null;
+    if (existingUser) {
+      // Update existing user
+      await ctx.db.patch(existingUser._id, {
+        email: args.email,
+        name: args.name,
+        photoURL: args.photoURL,
+      });
+      return existingUser._id;
+    } else {
+      // Create new user
+      const userId = await ctx.db.insert("users", {
+        firebaseUid: args.firebaseUid,
+        email: args.email,
+        name: args.name,
+        photoURL: args.photoURL,
+      });
+      return userId;
     }
+  },
+});
 
+/**
+ * Get user by Firebase UID
+ */
+export const getUserByFirebaseUid = query({
+  args: { firebaseUid: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
     return user;
   },
 });
 
 /**
- * Use this function internally to get the current user data. Remember to handle the null user case.
- * @param ctx
- * @returns
+ * Get current user by Firebase UID
  */
-export const getCurrentUser = async (ctx: QueryCtx) => {
-  const userId = await getAuthUserId(ctx);
-  if (userId === null) {
-    return null;
-  }
-  return await ctx.db.get(userId);
-};
+export const currentUser = query({
+  args: { firebaseUid: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebase_uid", (q) => q.eq("firebaseUid", args.firebaseUid))
+      .unique();
+    return user;
+  },
+});
