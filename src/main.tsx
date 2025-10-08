@@ -14,7 +14,24 @@ import "./types/global.d.ts";
 import "./lib/firebase";
 import { ConvexProvider } from "convex/react";
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+// Validate Convex URL
+const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+
+if (!convexUrl) {
+  console.error(
+    "Missing VITE_CONVEX_URL environment variable.\n\n" +
+    "For local development:\n" +
+    "  1. Run 'npx convex dev'\n" +
+    "  2. Ensure .env.local file contains VITE_CONVEX_URL\n\n" +
+    "For production deployment (Cloudflare Pages):\n" +
+    "  1. Go to your Cloudflare Pages project settings\n" +
+    "  2. Navigate to Settings > Environment Variables\n" +
+    "  3. Add VITE_CONVEX_URL with your production Convex URL\n" +
+    "  4. Get your production URL from: https://dashboard.convex.dev"
+  );
+}
+
+const convex = new ConvexReactClient(convexUrl);
 
 function RouteSyncer() {
   const location = useLocation();
